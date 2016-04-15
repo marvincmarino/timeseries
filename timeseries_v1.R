@@ -1,7 +1,11 @@
 # Tutorial from link:
 # https://a-little-book-of-r-for-time-series.readthedocs.org/en/latest/src/timeseries.html#reading-time-series-data
 
-#### Reading data ####
+# NOTES:
+# Summary on analysing ARIMA: http://people.duke.edu/~rnau/arimrule.htm
+# Good tutorial on ARIMA for seasonal data: http://people.duke.edu/~rnau/seasarim.htm
+
+#### Reading Data ####
 
 # data 1:
 # number of births per month in New York city, from January 1946 to December 1959 (originally collected by Newton).
@@ -20,7 +24,7 @@ plot.ts(souvenirtimeseries) # sales data seems to be having seasonality
 logsouvenirtimeseries = log(souvenirtimeseries)
 plot.ts(logsouvenirtimeseries)
 
-#### Decomposing seasonal time series ####
+#### Decomposing Seasonal Time Series ####
 
 library("TTR")
 
@@ -37,7 +41,7 @@ plot(birthstimeseries)
 plot(birthstimeseriesseasonallyadjusted)
 
 
-#### Exponential smoothing "plain vanilla" ####
+#### Exponential Smoothing "Plain Vanilla" ####
 
 # OK Exp smoothing for short term forecasts if timeseries can:
 # - be described using additive model 
@@ -97,7 +101,7 @@ plotForecastErrors <- function(forecasterrors)
 plotForecastErrors(rainseriesforecasts2$residuals)
 # seems that the residuals are white noise
 
-#### Holt-Winters exponential smoothing ####
+#### Exponential Smoothing with Holt-Winters ####
 
 souvenirtimeseriesforecasts <- HoltWinters(logsouvenirtimeseries); souvenirtimeseriesforecasts
 souvenirtimeseriesforecasts$SSE
@@ -115,7 +119,7 @@ plotForecastErrors(souvenirtimeseriesforecasts2$residuals) # are residuals white
 shapiro.test(souvenirtimeseriesforecasts2$residuals) # normality test on residuals
 
 
-#### ARIMA models ####
+#### ARIMA Models ####
 
 # the skirts data is the annual diameter of womens skirst 
 # good exmaple of additive time series with no trend nor seasonality
@@ -179,14 +183,29 @@ pacf(volcanodustseries, lag.max=20)
 auto.arima(volcanodustseries)
 
 
-# lets make predictions with arima
+#### Predictions with ARIMA ####
 
 # fit model
-kingstimeseriesarima <- arima(kingstimeseries, order=c(0,1,1)) # fit an ARIMA(0,1,1) model
-kingstimeseriesarima
+kingstimeseriesarima = arima(kingstimeseries, order=c(0,1,1)) # fit an ARIMA(0,1,1) model
+kingstimeseriesarim
 
 # out-of-sample predictions for the next 5 periods
 kingstimeseriesforecasts = forecast.Arima(kingstimeseriesarima, h=5)
 kingstimeseriesforecasts
 par(mfrow = c(1, 1))
 plot.forecast(kingstimeseriesforecasts)
+
+# goodness of fit
+plot.ts(kingstimeseriesforecasts$residuals) # make time plot of forecast errors
+plotForecastErrors(kingstimeseriesforecasts$residuals) # make a histogram
+
+# now fit ARIMA (2, 0, 0) for the volcano data
+volcanodustseriesarima = arima(volcanodustseries, order=c(2,0,0)); volcanodustseriesarima
+
+# forecast for next 31 years
+volcanodustseriesforecasts = forecast.Arima(volcanodustseriesarima, h=31); volcanodustseriesforecasts
+plot.forecast(volcanodustseriesforecasts)
+
+# goodness of fit
+plot.ts(volcanodustseriesforecasts$residuals) # make time plot of forecast errors
+plotForecastErrors(volcanodustseriesforecasts$residuals) # make a histogram
