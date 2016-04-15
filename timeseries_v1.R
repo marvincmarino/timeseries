@@ -37,7 +37,7 @@ plot(birthstimeseries)
 plot(birthstimeseriesseasonallyadjusted)
 
 
-#### Forecasting using exponential smoothing ####
+#### Exponential smoothing "plain vanilla" ####
 
 # OK Exp smoothing for short term forecasts if timeseries can:
 # - be described using additive model 
@@ -97,7 +97,7 @@ plotForecastErrors <- function(forecasterrors)
 plotForecastErrors(rainseriesforecasts2$residuals)
 # seems that the residuals are white noise
 
-#### Holt-winter exponential smoothing ####
+#### Holt-Winters exponential smoothing ####
 
 souvenirtimeseriesforecasts <- HoltWinters(logsouvenirtimeseries); souvenirtimeseriesforecasts
 souvenirtimeseriesforecasts$SSE
@@ -113,3 +113,80 @@ par(mfrow = c(1, 2))
 plot.ts(souvenirtimeseriesforecasts2$residuals); abline(h = 0) # fluctuating around 0?
 plotForecastErrors(souvenirtimeseriesforecasts2$residuals) # are residuals white noise?
 shapiro.test(souvenirtimeseriesforecasts2$residuals) # normality test on residuals
+
+
+#### ARIMA models ####
+
+# the skirts data is the annual diameter of womens skirst 
+# good exmaple of additive time series with no trend nor seasonality
+
+skirts = scan("http://robjhyndman.com/tsdldata/roberts/skirts.dat", skip=5)
+skirtsseries = ts(skirts,start=c(1866))
+par(mfrow = c(1, 1))
+plot.ts(skirtsseries, main = "annual diameter of womens skirts")
+
+# 1. decide the order of differenciating parameter
+# lets differenciate this ts to make it stationary
+skirtsseriesdiff1 = diff(skirtsseries, differences=1)
+plot.ts(skirtsseriesdiff1, main = "diff = 1")
+
+# notice that by differenciating we lose 1 data point:
+length(skirtsseries); length(skirtsseriesdiff1)
+
+# diff 1 is still non-stationary, lets be more aggressive and diff again
+
+skirtsseriesdiff2 = diff(skirtsseries, differences=2)
+par(mfrow = c(2, 1))
+plot.ts(skirtsseriesdiff1, main = "diff = 1")
+plot.ts(skirtsseriesdiff2, main = "diff = 2")
+
+# lets see if the diff 2 has less variance
+hist(skirtsseriesdiff1); hist(skirtsseriesdiff2)
+sd(skirtsseriesdiff1); sd(skirtsseriesdiff2)
+
+# so it will be ARIMA(p,d,q) with d = 2
+
+# lets see what the auto fit would say
+auto.arima(skirtsseries)
+
+# lets try same auto.arima with kings series:
+kings = scan("http://robjhyndman.com/tsdldata/misc/kings.dat",skip=3)
+kingstimeseries = ts(kings)
+kingtimeseriesdiff1 = diff(kingstimeseries, differences=1) # lets differenciate and compare
+plot.ts(kingstimeseries)
+plot.ts(kingtimeseriesdiff1)
+
+# analyse autocorrelograms and partial autocorrelograms
+par(mfrow = c(2, 1))
+acf(kingtimeseriesdiff1, lag.max=20) # plot 
+pacf(kingtimeseriesdiff1, lag.max=20) # plot 
+
+acf(kingtimeseriesdiff1, lag.max=20, plot=FALSE) # get autocorrelation values
+pacf(kingtimeseriesdiff1, lag.max=20, plot=FALSE) # get partial autocorrelation values
+
+# lets see what the auto.arima has to say
+auto.arima(kings)
+
+# new data for ARIMA test: volcanic dust veil index in the northern hemisphere, from 1500-1969 
+volcanodust = scan("http://robjhyndman.com/tsdldata/annual/dvi.dat", skip=1)
+volcanodustseries <- ts(volcanodust,start=c(1500))
+par(mfrow = c(1, 1))
+plot.ts(volcanodustseries)
+
+par(mfrow = c(2, 1))
+acf(volcanodustseries, lag.max=20)    
+pacf(volcanodustseries, lag.max=20)  
+auto.arima(volcanodustseries)
+
+
+# lets make predictions with arima
+
+# fit model
+kingstimeseriesarima <- arima(kingstimeseries, order=c(0,1,1)) # fit an ARIMA(0,1,1) model
+kingstimeseriesarima
+
+# out-of-sample predictions for the next 5 periods
+kingstimeseriesforecasts = forecast.Arima(kingstimeseriesarima, h=5)
+kingstimeseriesforecasts
+par(mfrow = c(1, 1))
+plot.forecast(kingstimeseriesforecasts)
